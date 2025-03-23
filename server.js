@@ -10,8 +10,10 @@ app.use(cookieParser());
 
 // CORS Middleware
 app.use(cors({
-    origin: "https://akdevo.github.io/", // Change this to match your frontend domain
-    credentials: true, // Allow sending cookies across origins
+    origin: "https://akdevo.github.io", // REMOVE the trailing slash
+    credentials: true, // Allows cookies to be sent
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST"],
 }));
 
 const CLIENT_ID = "5965494195376135434"; 
