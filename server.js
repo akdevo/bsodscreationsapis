@@ -14,25 +14,21 @@ app.use(cors({
     credentials: true, // Allow sending cookies across origins
 }));
 
-const CLIENT_ID = "5965494195376135434"; // Replace with your actual Roblox App ID
-const CLIENT_SECRET = "RBX-fQg3rLWj8E6MsaB6m7-6FSWrkmdyuvb4fsev65BAsgmmyLQH_mI95NUc2JPYjOe9"; // Replace with your Roblox secret
-const REDIRECT_URI = "https://bsodscreationsapis.onrender.com/auth/callback/redirect"; // Your public API callback URL
+const CLIENT_ID = "5965494195376135434"; 
+const CLIENT_SECRET = "RBX-fQg3rLWj8E6MsaB6m7-6FSWrkmdyuvb4fsev65BAsgmmyLQH_mI95NUc2JPYjOe9";
+const REDIRECT_URI = "https://bsodscreationsapis.onrender.com/auth/callback/redirect";
+
+// In-memory session store (replace with database in production)
+const sessions = {};
 
 // Function to generate a random code_verifier
 function generateCodeVerifier() {
-    const buffer = crypto.randomBytes(32);
-    return buffer.toString("base64")
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
+    return crypto.randomBytes(32).toString("base64url");
 }
 
 // Function to generate code_challenge from the code_verifier
 function generateCodeChallenge(codeVerifier) {
-    return crypto.createHash("sha256").update(codeVerifier).digest("base64")
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
+    return crypto.createHash("sha256").update(codeVerifier).digest("base64url");
 }
 
 // Redirect to Roblox authentication page
@@ -66,7 +62,7 @@ app.get("/auth/callback/redirect", async (req, res) => {
 
     try {
         // Exchange authorization code for access token
-        const response = await axios.post("https://apis.roblox.com/oauth/v1/token", new URLSearchParams({
+        const tokenResponse = await axios.post("https://apis.roblox.com/oauth/v1/token", new URLSearchParams({
             client_id: CLIENT_ID,
             client_secret: CLIENT_SECRET,
             code,
@@ -77,33 +73,50 @@ app.get("/auth/callback/redirect", async (req, res) => {
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
         });
 
-        const accessToken = response.data.access_token;
+        const accessToken = tokenResponse.data.access_token;
+
+        // Fetch user info from Roblox API
+        const userInfoResponse = await axios.get("https://apis.roblox.com/oauth/v1/userinfo", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        const { sub: userId, name: username } = userInfoResponse.data; // Get user ID & username
 
         // Generate a session token
-        const sessionToken = crypto.randomBytes(128).toString("hex");
+        const sessionToken = crypto.randomBytes(64).toString("hex");
+
+        // Save session info in memory (replace with database in production)
+        sessions[sessionToken] = { userId, username, accessToken };
 
         // Set session cookie
         res.cookie("session", sessionToken, {
             httpOnly: true,
-            secure: true,  // Ensure cookies work on HTTPS only
-            sameSite: "None",  // Allow cross-site cookies
+            secure: true,
+            sameSite: "None",
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
-        res.send("Login successful! You can now access the site.");
+        res.redirect("https://akdevo.github.io/"); // Redirect back to frontend
     } catch (error) {
         console.error(error.response ? error.response.data : error.message);
         res.status(500).send("Authentication error.");
     }
 });
 
-// Profile page (for testing purposes)
+// Profile endpoint - Returns logged-in user's info
 app.get("/profile", (req, res) => {
-    const session = req.cookies.session;
-    if (!session) {
-        return res.status(401).send("Not logged in.");
+    const sessionToken = req.cookies.session;
+    if (!sessionToken || !sessions[sessionToken]) {
+        return res.json({ authenticated: false });
     }
-    res.send(`Logged in with session: ${session}`);
+
+    const { userId, username } = sessions[sessionToken];
+
+    res.json({
+        authenticated: true,
+        userId,
+        username,
+    });
 });
 
 // Start the Express server
