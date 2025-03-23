@@ -96,7 +96,7 @@ app.get("/auth/callback/redirect", async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
-        res.redirect("https://akdevo.github.io/"); // Redirect back to frontend
+        res.redirect("https://akdevo.github.io/bsodscreations/main.html"); // Redirect back to frontend
     } catch (error) {
         console.error(error.response ? error.response.data : error.message);
         res.status(500).send("Authentication error.");
