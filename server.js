@@ -16,7 +16,7 @@ app.use(cors({
 
 const CLIENT_ID = "5965494195376135434"; // Replace with your actual Roblox App ID
 const CLIENT_SECRET = "RBX-fQg3rLWj8E6MsaB6m7-6FSWrkmdyuvb4fsev65BAsgmmyLQH_mI95NUc2JPYjOe9"; // Replace with your Roblox secret
-const REDIRECT_URI = "https://yourbackend.com/auth/callback/redirect"; // Your public API callback URL
+const REDIRECT_URI = "https://bsodscreationsapis.onrender.com/auth/callback/redirect"; // Your public API callback URL
 
 // Function to generate a random code_verifier
 function generateCodeVerifier() {
